@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Generator - Text-to-Speech</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .voice-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .range-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .text-area-container {
+            margin-bottom: 30px;
+        }
+
+        .text-area-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .text-area-header h3 {
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+
+        .word-count {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: 'Georgia', serif;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #7f8c8d;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .progress-container {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .audio-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .audio-container h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        audio {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(46, 204, 113, 0.3);
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .tips {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .tips h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .tips ul {
+            color: #424242;
+            padding-left: 20px;
+        }
+
+        .tips li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .voice-controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CC Audio Generator</h1>
+            <p>Professional Text-to-Speech for Content Creation</p>
+        </div>
+
+        <div class="main-content">
+            <div class="voice-controls">
+                <div class="control-group">
+                    <label for="ttsProvider">TTS Provider</label>
+                    <select id="ttsProvider">
+                        <option value="pollinations">Pollinations TTS (Direct API)</option>
+                        <option value="edge">Edge TTS (Requires Backend)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="voiceSelect">Voice Selection</label>
+                    <select id="voiceSelect">
+                        <optgroup label="Pollinations Voices" id="pollinationsVoices">
+                            <option value="amy">Amy - Professional Female</option>
+                            <option value="emma">Emma - Warm Narrator</option>
+                            <option value="brian">Brian - Clear Male</option>
+                            <option value="jenny">Jenny - Conversational</option>
+                            <option value="aria">Aria - Authoritative</option>
+                        </optgroup>
+                        <optgroup label="Edge TTS Voices" id="edgeVoices" style="display: none;">
+                            <option value="en-US-JennyNeural">Jenny (US) - Warm & Conversational</option>
+                            <option value="en-US-AriaNeural">Aria (US) - Professional & Clear</option>
+                            <option value="en-US-SaraNeural">Sara (US) - Mature & Authoritative</option>
+                            <option value="en-US-MichelleNeural">Michelle (US) - Sophisticated</option>
+                            <option value="en-GB-SoniaNeural">Sonia (UK) - Elegant British</option>
+                            <option value="en-AU-NatashaNeural">Natasha (AU) - Friendly Australian</option>
+                            <option value="en-US-GuyNeural">Guy (US) - Professional Male</option>
+                            <option value="en-GB-RyanNeural">Ryan (UK) - British Male</option>
+                        </optgroup>
+                    </select>
+                    <button class="btn btn-secondary" id="testVoiceBtn" style="margin-top: 10px; padding: 8px 16px; font-size: 14px;">
+                        Test Voice Sample
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <label for="speedRange">Speech Speed</label>
+                    <div class="range-container">
+                        <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1">
+                        <span class="range-value" id="speedValue">1.0x</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-area-container">
+                <div class="text-area-header">
+                    <h3>Story Script</h3>
+                    <span class="word-count" id="wordCount">0 words</span>
+                </div>
+                <textarea id="textInput" placeholder="Paste your script here...
+
+Example: My daughter-in-law called me a burden when she thought I couldn't hear her—but I owned the house she was living in.
+
+I was standing outside the kitchen door, holding two cups of tea I'd made for my son and his wife, when I heard Jennifer's voice float through the crack. 'Honestly, Mark, your mother is becoming such a burden. She's always here, always watching, always offering her opinions about everything. I can't stand it anymore.'
+
+Continue with your full story script here..."></textarea>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="generateBtn">
+                    <span class="btn-text">Generate Audio</span>
+                </button>
+                <button class="btn btn-secondary" id="clearBtn">Clear Text</button>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="audio-container" id="audioContainer">
+                <h3>Generated Audio</h3>
+                <audio controls id="audioPlayer"></audio>
+                <button class="download-btn" id="downloadBtn">Download Audio File</button>
+            </div>
+
+            <div class="audio-container" id="testAudioContainer">
+                <h3>Voice Test Sample</h3>
+                <audio controls id="testAudioPlayer"></audio>
+            </div>
+
+            <div class="tips">
+                <h4>Tips for Best Results:</h4>
+                <ul>
+                    <li><strong>Provider Selection:</strong> Pollinations works immediately, Edge TTS requires backend setup</li>
+                    <li><strong>Pollinations Voices:</strong> Amy and Emma work great for mature female narratives</li>
+                    <li><strong>Edge Voices:</strong> Jenny or Sara work exceptionally well for storytelling (when backend is available)</li>
+                    <li><strong>Speed:</strong> Keep between 0.8x - 1.0x for storytelling (default 1.0x recommended)</li>
+                    <li><strong>Text Length:</strong> Pollinations handles up to ~5000 characters per request, will auto-chunk longer texts</li>
+                    <li><strong>Large Scripts:</strong> For 10,000+ word scripts, processing will be done in chunks and combined</li>
+                    <li><strong>File Format:</strong> Downloads as high-quality audio suitable for YouTube</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class EdgeTTSConverter {
+            constructor() {
+                this.audioContext = null;
+                this.isGenerating = false;
+                this.initializeElements();
+                this.setupEventListeners();
+                this.updateWordCount();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    textInput: document.getElementById('textInput'),
+                    voiceSelect: document.getElementById('voiceSelect'),
+                    speedRange: document.getElementById('speedRange'),
+                    speedValue: document.getElementById('speedValue'),
+                    generateBtn: document.getElementById('generateBtn'),
+                    clearBtn: document.getElementById('clearBtn'),
+                    testVoiceBtn: document.getElementById('testVoiceBtn'),
+                    progressContainer: document.getElementById('progressContainer'),
+                    progressFill: document.getElementById('progressFill'),
+                    statusMessage: document.getElementById('statusMessage'),
+                    audioContainer: document.getElementById('audioContainer'),
+                    audioPlayer: document.getElementById('audioPlayer'),
+                    testAudioContainer: document.getElementById('testAudioContainer'),
+                    testAudioPlayer: document.getElementById('testAudioPlayer'),
+                    downloadBtn: document.getElementById('downloadBtn'),
+                    wordCount: document.getElementById('wordCount')
+                };
+            }
+
+            setupEventListeners() {
+                this.elements.ttsProvider = document.getElementById('ttsProvider');
+                
+                this.elements.speedRange.addEventListener('input', () => {
+                    this.elements.speedValue.textContent = this.elements.speedRange.value + 'x';
+                });
+
+                this.elements.textInput.addEventListener('input', () => {
+                    this.updateWordCount();
+                });
+
+                this.elements.ttsProvider.addEventListener('change', () => {
+                    this.switchProvider();
+                });
+
+                this.elements.generateBtn.addEventListener('click', () => {
+                    this.generateAudio();
+                });
+
+                this.elements.testVoiceBtn.addEventListener('click', () => {
+                    this.testVoice();
+                });
+
+                this.elements.clearBtn.addEventListener('click', () => {
+                    this.clearText();
+                });
+
+                this.elements.downloadBtn.addEventListener('click', () => {
+                    this.downloadAudio();
+                });
+            }
+
+            switchProvider() {
+                const provider = this.elements.ttsProvider.value;
+                const pollinationsVoices = document.getElementById('pollinationsVoices');
+                const edgeVoices = document.getElementById('edgeVoices');
+                
+                if (provider === 'pollinations') {
+                    pollinationsVoices.style.display = 'block';
+                    edgeVoices.style.display = 'none';
+                    // Select first pollinations voice
+                    this.elements.voiceSelect.value = 'amy';
+                } else {
+                    pollinationsVoices.style.display = 'none';
+                    edgeVoices.style.display = 'block';
+                    // Select first edge voice
+                    this.elements.voiceSelect.value = 'en-US-JennyNeural';
+                }
+            }
+
+            updateWordCount() {
+                const text = this.elements.textInput.value.trim();
+                const wordCount = text ? text.split(/\s+/).length : 0;
+                this.elements.wordCount.textContent = `${wordCount.toLocaleString()} words`;
+            }
+
+            showStatus(message, type = 'success') {
+                this.elements.statusMessage.textContent = message;
+                this.elements.statusMessage.className = `status-message status-${type}`;
+                this.elements.statusMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    this.elements.statusMessage.style.display = 'none';
+                }, 5000);
+            }
+
+            showProgress(show = true) {
+                this.elements.progressContainer.style.display = show ? 'block' : 'none';
+                if (!show) {
+                    this.elements.progressFill.style.width = '0%';
+                }
+            }
+
+            updateProgress(percentage) {
+                this.elements.progressFill.style.width = percentage + '%';
+            }
+
+            async generateAudio() {
+                const text = this.elements.textInput.value.trim();
+                const provider = this.elements.ttsProvider.value;
+                
+                if (!text) {
+                    this.showStatus('Please enter some text to convert.', 'error');
+                    return;
+                }
+
+                if (this.isGenerating) {
+                    return;
+                }
+
+                this.isGenerating = true;
+                this.elements.generateBtn.disabled = true;
+                this.elements.generateBtn.innerHTML = '<span class="loading-spinner"></span>Generating...';
+                
+                this.showProgress(true);
+                this.elements.audioContainer.style.display = 'none';
+
+                try {
+                    let audioBlob;
+                    
+                    if (provider === 'pollinations') {
+                        audioBlob = await this.generatePollinationsAudio(text);
+                    } else {
+                        audioBlob = await this.generateEdgeAudio(text);
+                    }
+                    
+                    // Create audio URL and display player
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    this.elements.audioPlayer.src = audioUrl;
+                    this.elements.audioContainer.style.display = 'block';
+                    
+                    // Store blob for download
+                    this.currentAudioBlob = audioBlob;
+                    
+                    this.showStatus('Audio generated successfully!', 'success');
+                    
+                } catch (error) {
+                    console.error('Error generating audio:', error);
+                    this.showStatus(`Error generating audio: ${error.message}`, 'error');
+                } finally {
+                    this.isGenerating = false;
+                    this.elements.generateBtn.disabled = false;
+                    this.elements.generateBtn.innerHTML = '<span class="btn-text">Generate Audio</span>';
+                    this.showProgress(false);
+                }
+            }
+
+            async generatePollinationsAudio(text) {
+                const voice = this.elements.voiceSelect.value;
+                const speed = parseFloat(this.elements.speedRange.value);
+                
+                // Split text into chunks for Pollinations (max ~5000 chars per request)
+                const chunks = this.splitTextIntoChunks(text, 4000);
+                const audioChunks = [];
+
+                for (let i = 0; i < chunks.length; i++) {
+                    this.updateProgress(((i + 1) / chunks.length) * 100);
+                    
+                    try {
+                        const audioBlob = await this.callPollinationsAPI(chunks[i], voice, speed);
+                        audioChunks.push(audioBlob);
+                        
+                        // Small delay between requests
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } catch (error) {
+                        throw new Error(`Failed to generate chunk ${i + 1}: ${error.message}`);
+                    }
+                }
+
+                // If only one chunk, return it directly
+                if (audioChunks.length === 1) {
+                    return audioChunks[0];
+                }
+
+                // Combine multiple audio chunks
+                return await this.combineAudioBlobs(audioChunks);
+            }
+
+            async callPollinationsAPI(text, voice, speed) {
+                // Pollinations TTS API endpoint
+                const apiUrl = `https://text-to-speech.pollinations.ai/${encodeURIComponent(text)}`;
+                
+                const params = new URLSearchParams({
+                    voice: voice,
+                    speed: speed.toString()
+                });
+
+                const response = await fetch(`${apiUrl}?${params}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'audio/mpeg'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Pollinations API error: ${response.status} ${response.statusText}`);
+                }
+
+                return await response.blob();
+            }
+
+            async generateEdgeAudio(text) {
+                // Edge TTS would require backend implementation
+                throw new Error('Edge TTS requires backend setup. Please implement server-side Edge TTS integration.');
+            }
+
+            async combineAudioBlobs(audioBlobs) {
+                // For MP3 files, we can't easily combine them in the browser
+                // This is a simplified approach - in production, you'd want proper audio merging
+                
+                if (audioBlobs.length === 1) {
+                    return audioBlobs[0];
+                }
+
+                // Create a simple concatenated blob (note: this may not work perfectly with MP3)
+                // For proper audio merging, you'd need a library like FFmpeg.js or server-side processing
+                const combinedArrayBuffers = [];
+                
+                for (const blob of audioBlobs) {
+                    const arrayBuffer = await blob.arrayBuffer();
+                    combinedArrayBuffers.push(new Uint8Array(arrayBuffer));
+                }
+                
+                // Calculate total size
+                const totalSize = combinedArrayBuffers.reduce((acc, curr) => acc + curr.length, 0);
+                const combined = new Uint8Array(totalSize);
+                
+                // Concatenate arrays
+                let offset = 0;
+                for (const chunk of combinedArrayBuffers) {
+                    combined.set(chunk, offset);
+                    offset += chunk.length;
+                }
+                
+                return new Blob([combined], { type: 'audio/mpeg' });
+            }
+
+            async testVoice() {
+                const provider = this.elements.ttsProvider.value;
+                const voice = this.elements.voiceSelect.value;
+                const speed = parseFloat(this.elements.speedRange.value);
+                
+                // Test samples based on provider
+                let testText;
+                if (provider === 'pollinations') {
+                    testText = this.getPollinationsTestText(voice);
+                } else {
+                    testText = this.getEdgeTestText(voice);
+                }
+
+                // Disable test button
+                const originalText = this.elements.testVoiceBtn.textContent;
+                this.elements.testVoiceBtn.disabled = true;
+                this.elements.testVoiceBtn.innerHTML = '<span class="loading-spinner"></span>Testing...';
+
+                try {
+                    let audioBlob;
+                    
+                    if (provider === 'pollinations') {
+                        audioBlob = await this.callPollinationsAPI(testText, voice, speed);
+                    } else {
+                        throw new Error('Edge TTS test samples require backend implementation');
+                    }
+                    
+                    // Play test sample
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    this.elements.testAudioPlayer.src = audioUrl;
+                    this.elements.testAudioContainer.style.display = 'block';
+                    
+                    // Auto-play the test sample
+                    setTimeout(() => {
+                        this.elements.testAudioPlayer.play().catch(e => {
+                            // Auto-play might be blocked, that's okay
+                            console.log('Auto-play blocked, user can click play manually');
+                        });
+                    }, 100);
+                    
+                    this.showStatus('Test sample generated! Click play to hear the voice.', 'success');
+                    
+                } catch (error) {
+                    console.error('Error generating test sample:', error);
+                    this.showStatus(`Error generating test sample: ${error.message}`, 'error');
+                } finally {
+                    this.elements.testVoiceBtn.disabled = false;
+                    this.elements.testVoiceBtn.textContent = originalText;
+                }
+            }
+
+            getPollinationsTestText(voice) {
+                const testSamples = {
+                    'amy': "Hello, I'm Amy. I provide professional, clear narration perfect for business content and storytelling. My voice is warm yet authoritative, ideal for engaging your audience.",
+                    'emma': "Hi there, I'm Emma. I specialize in warm, friendly narration that draws listeners in. I'm perfect for stories, tutorials, and content that needs a personal touch.",
+                    'brian': "Hello, I'm Brian. I offer clear, professional male narration suitable for a wide range of content. My voice is trustworthy and easy to understand.",
+                    'jenny': "Hey, I'm Jenny! I bring a conversational, friendly tone to your content. I'm great for casual narration and content that needs to feel approachable.",
+                    'aria': "Hello, I'm Aria. I provide authoritative, confident narration perfect for professional content, presentations, and content requiring a strong, clear voice."
+                };
+                
+                return testSamples[voice] || "This is a test sample of the selected voice. Listen to hear how your content will sound with this voice option.";
+            }
+
+            splitTextIntoChunks(text, maxLength = 1000) {
+                const sentences = text.match(/[^\.!?]+[\.!?]+/g) || [text];
+                const chunks = [];
+                let currentChunk = '';
+
+                for (const sentence of sentences) {
+                    if ((currentChunk + sentence).length <= maxLength) {
+                        currentChunk += sentence;
+                    } else {
+                        if (currentChunk) {
+                            chunks.push(currentChunk.trim());
+                        }
+                        currentChunk = sentence;
+                    }
+                }
+
+                if (currentChunk) {
+                    chunks.push(currentChunk.trim());
+                }
+
+                return chunks;
+            }
+
+            async synthesizeChunk(text) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        // Create SSML for better control
+                        const voice = this.elements.voiceSelect.value;
+                        const rate = this.elements.speedRange.value;
+                        
+                        const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+                            <voice name="${voice}">
+                                <prosody rate="${rate}">${this.escapeXml(text)}</prosody>
+                            </voice>
+                        </speak>`;
+
+                        // Use Web Speech API SpeechSynthesis as fallback
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.rate = parseFloat(rate);
+                        utterance.pitch = 1.0;
+                        utterance.volume = 1.0;
+
+                        // Try to find a suitable voice
+                        const voices = speechSynthesis.getVoices();
+                        const preferredVoice = voices.find(v => 
+                            v.name.includes('Microsoft') || 
+                            v.name.includes('Natural') ||
+                            (v.lang.startsWith('en') && v.gender === 'female')
+                        ) || voices.find(v => v.lang.startsWith('en'));
+
+                        if (preferredVoice) {
+                            utterance.voice = preferredVoice;
+                        }
+
+                        // For now, we'll simulate the audio generation
+                        // In a real implementation, you'd need a server-side component
+                        // that calls the actual Edge TTS API
+                        setTimeout(() => {
+                            // Simulate audio data - replace with actual Edge TTS call
+                            const dummyAudio = new ArrayBuffer(1024);
+                            resolve(dummyAudio);
+                        }, 500);
+
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+
+            async combineAudioChunks(audioChunks) {
+                // In a real implementation, this would combine actual audio data
+                // For now, return a placeholder
+                return new ArrayBuffer(8192);
+            }
+
+            escapeXml(unsafe) {
+                return unsafe.replace(/[<>&'"]/g, function (c) {
+                    switch (c) {
+                        case '<': return '&lt;';
+                        case '>': return '&gt;';
+                        case '&': return '&amp;';
+                        case '\'': return '&apos;';
+                        case '"': return '&quot;';
+                    }
+                });
+            }
+
+            clearText() {
+                this.elements.textInput.value = '';
+                this.updateWordCount();
+                this.elements.audioContainer.style.display = 'none';
+                this.showStatus('Text cleared.', 'success');
+            }
+
+            downloadAudio() {
+                if (!this.currentAudioBlob) {
+                    this.showStatus('No audio available to download.', 'error');
+                    return;
+                }
+
+                const url = URL.createObjectURL(this.currentAudioBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `her-stories-audio-${new Date().toISOString().slice(0,10)}.mp3`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.showStatus('Audio download started!', 'success');
+            }
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new EdgeTTSConverter();
+            // Initialize with Pollinations as default
+            app.switchProvider();
+        });
+
+        // Load voices when available
+        if ('speechSynthesis' in window) {
+            speechSynthesis.addEventListener('voiceschanged', () => {
+                // Voices are now loaded
+            });
+        }
+    </script>
+</body>
+</html>
